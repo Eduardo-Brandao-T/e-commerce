@@ -1,0 +1,80 @@
+# =========================
+# 📦 Monorepo Ignore Rules
+# =========================
+
+# Node.js
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+coverage/
+.nyc_output/
+**/coverage/
+**/.nyc_output/
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Env files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+**/.env
+**/.env.*
+
+# Temporary files
+.temp/
+.tmp/
+**/.temp/
+**/.tmp/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# =========================
+# Backend-specific ignores
+# =========================
+backend/node_modules/
+backend/dist/
+backend/.cache/
+backend/.env
