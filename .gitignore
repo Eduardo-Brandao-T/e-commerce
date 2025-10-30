@@ -78,3 +78,4 @@ backend/node_modules/
 backend/dist/
 backend/.cache/
 backend/.env
+backend/generated/prisma
