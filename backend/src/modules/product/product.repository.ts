@@ -12,8 +12,8 @@ export class ProductRepository {
     });
   }
 
-  async findAllProducts() {
-    return this.prismaService.product.findMany();
+  async findManyProducts(whereInput?: Prisma.ProductWhereInput) {
+    return this.prismaService.product.findMany({ where: whereInput });
   }
 
   async createProduct(data: Prisma.ProductCreateInput) {

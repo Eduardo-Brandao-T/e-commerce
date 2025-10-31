@@ -79,8 +79,6 @@ describe('ProductController', () => {
     const createdProduct = {
       id: 3,
       ...dto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
     mockProductService.createProduct.mockResolvedValue(createdProduct);
 
@@ -96,8 +94,6 @@ describe('ProductController', () => {
       name: 'New Product',
       price: 180,
       description: 'New desc',
-      createdAt: new Date(),
-      updatedAt: new Date(),
     };
     mockProductService.updateProduct.mockResolvedValue(updatedProduct);
 
