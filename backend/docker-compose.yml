@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: ecommerce_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ecommerce
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ecommerce_rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    networks:
+      - ecommerce_network
+
+  backend:
+    build: .
+    container_name: ecommerce_backend
+    depends_on:
+      - postgres
+      - rabbitmq
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    networks:
+      - ecommerce_network
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma db seed &&
+        if [ \"$NODE_ENV\" = 'production' ]; then npm run start:prod; else npm run start:dev; fi
+      "
+
+  test:
+    build: .
+    container_name: ecommerce_test
+    depends_on:
+      - postgres
+      - rabbitmq
+    env_file:
+      - .env.test
+    networks:
+      - ecommerce_network
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npm run test
+      "
+
+volumes:
+  postgres_data:
+
+networks:
+  ecommerce_network:
+    driver: bridge

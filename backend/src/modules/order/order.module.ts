@@ -3,10 +3,10 @@ import { OrderController } from './order.controller';
 import { OrderRepository } from './order.repository';
 import { OrderService } from './order.service';
 import { ProductModule } from '../product/product.module';
-import { RabbitMQModule } from 'src/infra/rabbitmq.module';
+import { EventsModule } from 'src/events/events.module';
 
 @Module({
-  imports: [ProductModule, RabbitMQModule],
+  imports: [ProductModule, EventsModule],
   controllers: [OrderController],
   providers: [OrderRepository, OrderService],
 })
