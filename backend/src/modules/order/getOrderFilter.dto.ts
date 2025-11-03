@@ -8,7 +8,7 @@ export class GetOrdersFilterDto {
 
   @IsOptional()
   @IsInt()
-  customerId?: number;
+  userId?: number;
 
   @IsOptional()
   @IsEnum(OrderStatus)

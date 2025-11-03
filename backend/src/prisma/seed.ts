@@ -1,26 +1,33 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { PrismaClient, OrderStatus, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
+const saltRounds = 10;
 const prisma = new PrismaClient();
 
 async function main() {
   // --- Clientes ---
-  const customer1 = await prisma.customer.upsert({
-    where: { email: 'cliente1@email.com' },
+  const adminPassword = await bcrypt.hash('admin', saltRounds);
+  const clientPassword = await bcrypt.hash('senha123', saltRounds);
+  const user1 = await prisma.user.upsert({
+    where: { email: 'admin@email.com' },
     update: {},
     create: {
-      name: 'Cliente 1',
-      email: 'cliente1@email.com',
+      name: 'admin',
+      email: 'admin@email.com',
+      role: Role.ADMIN,
       document: '123.456.789-00',
+      password: adminPassword,
     },
   });
 
-  const customer2 = await prisma.customer.upsert({
-    where: { email: 'cliente2@email.com' },
+  const user2 = await prisma.user.upsert({
+    where: { email: 'cliente@email.com' },
     update: {},
     create: {
-      name: 'Cliente 2',
-      email: 'cliente2@email.com',
+      name: 'Cliente',
+      email: 'cliente@email.com',
       document: '987.654.321-00',
+      password: clientPassword,
     },
   });
 
@@ -52,7 +59,7 @@ async function main() {
     where: { id: 1 },
     update: {},
     create: {
-      customerId: customer1.id,
+      userId: user1.id,
       total: 130,
       status: OrderStatus.PENDING_PAYMENT,
       orderItems: {

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductController } from '../product.controller';
 import { ProductService } from '../product.service';
 import { CreateProductDTO } from '../createProduct.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 describe('ProductController', () => {
   let controller: ProductController;
@@ -18,7 +20,12 @@ describe('ProductController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProductController],
       providers: [{ provide: ProductService, useValue: mockProductService }],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ProductController>(ProductController);
     service = module.get<ProductService>(ProductService);

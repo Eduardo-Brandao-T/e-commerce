@@ -1,5 +1,6 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
+import { MESSAGES } from 'src/common/constants/messages.constants';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller()
@@ -17,13 +18,13 @@ export class DlqConsumer {
         data: {
           eventType: event || 'UNKNOWN',
           payload: data || {},
-          error: error || 'Unknown error',
+          error: error || MESSAGES.EVENTS.UNKNOWN_ERROR,
         },
       });
 
-      this.logger.error(`DLQ message saved: event=${event}, error=${error}`);
+      this.logger.error(`Mensagem DLQ salva: evento=${event}, erro=${error}`);
     } catch (err) {
-      this.logger.error('Failed to save DLQ message', err as any);
+      this.logger.error('Falha ao salvar mensagem DLQ', err as any);
     }
   }
 }

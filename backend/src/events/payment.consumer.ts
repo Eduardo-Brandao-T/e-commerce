@@ -21,7 +21,7 @@ export class PaymentConsumer {
 
     try {
       const orderId = data.orderId;
-      this.logger.log(`💳 Processing payment for order ${orderId}`);
+      this.logger.log(`Processando pagamento para pedido ${orderId}`);
       const paymentResult = await this.simulateExternalPayment(orderId);
 
       await this.prisma.order.update({
@@ -35,8 +35,8 @@ export class PaymentConsumer {
 
       this.logger.log(
         paymentResult.success
-          ? `✅ Payment confirmed for order ${orderId}`
-          : `❌ Payment failed for order ${orderId}`,
+          ? `Pagamento confirmado para pedido ${orderId}`
+          : `Falha no pagamento do pedido ${orderId}`,
       );
 
       channel.ack(originalMsg);
@@ -47,7 +47,7 @@ export class PaymentConsumer {
       if (retryCount <= maxRetries) {
         const backoff = 1000 * Math.pow(2, retryCount - 1);
         this.logger.warn(
-          `Retry ${retryCount} in ${backoff}ms: ${error.message}`,
+          `${retryCount} tentativas em ${backoff}ms: ${error.message}`,
         );
 
         channel.publish('', 'app_events', originalMsg.content, {
@@ -57,7 +57,7 @@ export class PaymentConsumer {
         channel.ack(originalMsg);
       } else {
         this.logger.error(
-          `Max retries reached. Sending to DLQ: ${error.message}`,
+          `Numéro máximo de tentativas excedido. Enviando para DLQ: ${error.message}`,
         );
         channel.nack(originalMsg, false, false);
       }
@@ -69,7 +69,7 @@ export class PaymentConsumer {
   ): Promise<{ success: boolean; status: OrderStatus }> {
     const delay = Math.floor(Math.random() * 10000) + 5000;
     this.logger.log(
-      `⏱ Simulating external payment delay of ${delay}ms for order ${orderId}`,
+      `Simulando pagamento com delay de ${delay}ms para o pedido ${orderId}`,
     );
     await new Promise((resolve) => setTimeout(resolve, delay));
 

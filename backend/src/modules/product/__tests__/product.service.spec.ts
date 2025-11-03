@@ -9,7 +9,7 @@ describe('ProductService', () => {
 
   const mockProductRepository = {
     findProductById: jest.fn(),
-    findAllProducts: jest.fn(),
+    findManyProducts: jest.fn(),
     createProduct: jest.fn(),
     updateProduct: jest.fn(),
   };
@@ -61,11 +61,11 @@ describe('ProductService', () => {
         description: 'Test 2',
       },
     ];
-    mockProductRepository.findAllProducts.mockResolvedValue(products);
+    mockProductRepository.findManyProducts.mockResolvedValue(products);
 
     const result = await service.getAllProducts();
     expect(result).toEqual(products);
-    expect(mockProductRepository.findAllProducts).toHaveBeenCalled();
+    expect(mockProductRepository.findManyProducts).toHaveBeenCalled();
   });
 
   it('should create a product', async () => {

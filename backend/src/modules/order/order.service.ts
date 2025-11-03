@@ -6,6 +6,7 @@ import { Prisma, Product } from '@prisma/client';
 import { EventsService } from 'src/events/events.service';
 import { EventType } from 'src/events/eventTypes';
 import { GetOrdersFilterDto } from './getOrderFilter.dto';
+import { MESSAGES } from 'src/common/constants/messages.constants';
 
 type PrismaOrderItemInput = {
   product: { connect: { id: number } };
@@ -44,16 +45,19 @@ export class OrderService {
     });
   }
 
-  async getOrderById(id: number) {
-    return this.orderRepository.findOrderById(id);
+  async getOrdersByUserId(UserId: number) {
+    return this.orderRepository.findManyOrders({
+      where: { userId: UserId },
+      include: { orderItems: true },
+    });
   }
 
   private buildWhere(filters: GetOrdersFilterDto) {
-    const { orderId, customerId, status, startDate, endDate } = filters;
+    const { orderId, userId, status, startDate, endDate } = filters;
 
     return {
       ...(orderId && { id: orderId }),
-      ...(customerId && { customerId }),
+      ...(userId && { userId }),
       ...(status && { status }),
       ...(startDate || endDate
         ? {
@@ -66,13 +70,13 @@ export class OrderService {
     };
   }
 
-  async createOrder({ customerId, items }: CreateOrderDto) {
+  async createOrder({ userId, items }: CreateOrderDto) {
     const products = await this.getProducts(items);
     const itemsWithPrice = this.buildItemsWithPrice(items, products);
     const total = this.calculateTotal(itemsWithPrice);
 
     const createdOrder = await this.orderRepository.createOrder({
-      customer: { connect: { id: customerId } },
+      user: { connect: { id: userId } },
       total,
       orderItems: {
         create: itemsWithPrice,
@@ -91,7 +95,7 @@ export class OrderService {
     });
 
     if (products.length !== items.length) {
-      throw new Error('Um ou mais produtos não foram encontrados');
+      throw new Error(MESSAGES.PRODUCT.MANY_NOT_FOUND);
     }
 
     return products;
@@ -103,7 +107,8 @@ export class OrderService {
   ): PrismaOrderItemInput[] {
     return items.map((item) => {
       const product = products.find((p) => p.id === item.productId);
-      if (!product) throw new Error(`Produto ${item.productId} não encontrado`);
+      if (!product)
+        throw new Error(`${MESSAGES.PRODUCT.NOT_FOUND} ${item.productId}`);
 
       return {
         product: { connect: { id: item.productId } },
@@ -120,7 +125,7 @@ export class OrderService {
   private emitOrderCreatedEvent(order: OrderWithItems) {
     this.events.emit(EventType.ORDER_CREATED, {
       orderId: order.id,
-      customerId: order.customerId,
+      userId: order.userId,
       total: order.total,
       items: order.orderItems,
       status: order.status,
