@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductController } from '../product.controller';
 import { ProductService } from '../product.service';
-import { CreateProductDTO } from '../createProduct.dto';
+import { CreateProductDTO } from '../dto/createProduct.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 

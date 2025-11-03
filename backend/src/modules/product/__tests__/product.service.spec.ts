@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductService } from '../product.service';
 import { ProductRepository } from '../product.repository';
-import { CreateProductDTO } from '../createProduct.dto';
+import { CreateProductDTO } from '../dto/createProduct.dto';
 
 describe('ProductService', () => {
   let service: ProductService;

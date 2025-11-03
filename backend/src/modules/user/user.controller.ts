@@ -12,13 +12,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDTO } from './createUser.dto';
 import { MESSAGES } from 'src/common/constants/messages.constants';
 import { Roles } from 'src/common/guards/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { Public } from 'src/common/guards/public.decorator';
 import { User } from '@prisma/client';
+import { CreateUserDTO } from './dto/createUser.dto';
+import { UpdateUserDTO } from './dto/updateUser.dto';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,7 +53,7 @@ export class UserController {
   @Roles('USER', 'ADMIN')
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<CreateUserDTO>,
+    @Body() data: UpdateUserDTO,
   ): Promise<User> {
     const user = await this.userService.updateUser(id, data);
     if (!user) {

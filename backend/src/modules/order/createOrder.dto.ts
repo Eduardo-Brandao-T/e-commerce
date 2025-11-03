@@ -7,6 +7,7 @@ export class OrderItemDto {
   productId: number;
 
   @IsInt()
+  @Type(() => Number)
   @Min(1, { message: MESSAGES.ORDER.INVALID_ITEM_VALUE })
   quantity: number;
 }

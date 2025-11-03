@@ -1,5 +1,5 @@
 import { UserRepository } from './user.repository';
-import { CreateUserDTO } from './createUser.dto';
+import { CreateUserDTO } from './dto/createUser.dto';
 import { ConflictException, Injectable } from '@nestjs/common';
 import { MESSAGES } from 'src/common/constants/messages.constants';
 import * as bcrypt from 'bcrypt';
