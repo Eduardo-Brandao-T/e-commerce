@@ -1,0 +1,60 @@
+{
+  "vhosts": [{ "name": "/" }],
+  "queues": [
+    {
+      "name": "app_events",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "app_events_dlq"
+      }
+    },
+    {
+      "name": "app_events_retry",
+      "vhost": "/",
+      "durable": true,
+      "arguments": {
+        "x-message-ttl": 10000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "app_events"
+      }
+    },
+    {
+      "name": "app_events_dlq",
+      "vhost": "/",
+      "durable": true
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true
+    }
+  ],
+  "bindings": [
+    {
+      "source": "",
+      "vhost": "/",
+      "destination": "app_events",
+      "destination_type": "queue",
+      "routing_key": "app_events"
+    },
+    {
+      "source": "",
+      "vhost": "/",
+      "destination": "app_events_retry",
+      "destination_type": "queue",
+      "routing_key": "app_events_retry"
+    },
+    {
+      "source": "",
+      "vhost": "/",
+      "destination": "app_events_dlq",
+      "destination_type": "queue",
+      "routing_key": "app_events_dlq"
+    }
+  ]
+}
