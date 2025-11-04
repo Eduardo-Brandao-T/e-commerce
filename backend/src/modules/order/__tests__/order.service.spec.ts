@@ -5,12 +5,15 @@ import { ProductRepository } from '../../product/product.repository';
 import { CreateOrderDto } from '../dto/createOrder.dto';
 import { MESSAGES } from 'src/common/constants/messages.constants';
 import { EventsService } from 'src/events/events.service';
+import { LogService } from 'src/modules/log/log.service';
+import { ActionType, EntityType } from '@prisma/client';
 
 describe('OrderService', () => {
   let service: OrderService;
   let orderRepo: OrderRepository;
   let productRepo: ProductRepository;
   let events: EventsService;
+  let logService: LogService;
 
   const mockOrderRepository = {
     createOrder: jest.fn(),
@@ -19,6 +22,8 @@ describe('OrderService', () => {
   };
   const mockProductRepository = { findManyProducts: jest.fn() };
   const mockEventsService = { emit: jest.fn() };
+  const mockLogService = { createLog: jest.fn() };
+  const currentUser = { userId: 10, role: 'CUSTOMER' };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +32,7 @@ describe('OrderService', () => {
         { provide: OrderRepository, useValue: mockOrderRepository },
         { provide: ProductRepository, useValue: mockProductRepository },
         { provide: EventsService, useValue: mockEventsService },
+        { provide: LogService, useValue: mockLogService },
       ],
     }).compile();
 
@@ -34,6 +40,7 @@ describe('OrderService', () => {
     orderRepo = module.get(OrderRepository);
     productRepo = module.get(ProductRepository);
     events = module.get(EventsService);
+    logService = module.get(LogService);
   });
 
   it('should be defined', () => {
@@ -57,7 +64,7 @@ describe('OrderService', () => {
         orderItems: [{ productId: 1, quantity: 2, price: 100 }],
       });
 
-      const result = await service.createOrder(dto);
+      const result = await service.createOrder(dto, currentUser);
 
       expect(result.id).toBe(1);
       expect(events.emit).toHaveBeenCalled();
@@ -71,7 +78,7 @@ describe('OrderService', () => {
       };
       mockProductRepository.findManyProducts.mockResolvedValue([]);
 
-      await expect(service.createOrder(dto)).rejects.toThrow(
+      await expect(service.createOrder(dto, currentUser)).rejects.toThrow(
         MESSAGES.PRODUCT.MANY_NOT_FOUND,
       );
     });

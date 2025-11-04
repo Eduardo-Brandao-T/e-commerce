@@ -8,6 +8,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 describe('ProductController', () => {
   let controller: ProductController;
   let service: ProductService;
+  const currentUser = { userId: 10, role: 'CUSTOMER' };
 
   const mockProductService = {
     getProductById: jest.fn(),
@@ -89,9 +90,12 @@ describe('ProductController', () => {
     };
     mockProductService.createProduct.mockResolvedValue(createdProduct);
 
-    const result = await controller.createProduct(dto);
+    const result = await controller.createProduct(dto, currentUser);
     expect(result).toEqual(createdProduct);
-    expect(mockProductService.createProduct).toHaveBeenCalledWith(dto);
+    expect(mockProductService.createProduct).toHaveBeenCalledWith(
+      dto,
+      currentUser,
+    );
   });
 
   it('should update a product', async () => {
@@ -104,11 +108,12 @@ describe('ProductController', () => {
     };
     mockProductService.updateProduct.mockResolvedValue(updatedProduct);
 
-    const result = await controller.updateProduct(3, updateData);
+    const result = await controller.updateProduct(3, updateData, currentUser);
     expect(result).toEqual(updatedProduct);
     expect(mockProductService.updateProduct).toHaveBeenCalledWith(
       3,
       updateData,
+      currentUser,
     );
   });
 });

@@ -43,17 +43,33 @@ export class ProductService {
     data: Partial<CreateProductDTO>,
     currentUser: UserPayload,
   ): Promise<Product | null> {
-    const result = await this.productRepository.updateProduct(id, data);
-    if (result) {
+    const oldProduct = await this.productRepository.findProductById(id);
+    if (!oldProduct) return null;
+
+    const updatedProduct = await this.productRepository.updateProduct(id, data);
+    if (updatedProduct) {
+      const oldValues = Object.keys(data).reduce(
+        (acc, key) => {
+          acc[key] = oldProduct[key as keyof typeof oldProduct];
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+
+      const description = JSON.stringify({
+        old: oldValues,
+        new: data,
+      });
+
       await this.logService.createLog({
         action: ActionType.UPDATE,
         entity: EntityType.PRODUCT,
-        entityId: result.id,
+        entityId: updatedProduct.id,
         performedById: currentUser.userId,
-        description: `Product ${result.id} updated by ${currentUser.userId}`,
+        description,
       });
     }
 
-    return result;
+    return updatedProduct;
   }
 }

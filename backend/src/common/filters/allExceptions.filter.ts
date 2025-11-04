@@ -20,9 +20,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus();
       const res = exception.getResponse();
       message = typeof res === 'string' ? res : JSON.stringify(res, null, 2);
-    } else if (exception instanceof Error) {
-      //Tirar esse else if depois
-      message = exception.message;
     }
 
     response.status(status).json({

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from '../user.service';
 import { UserRepository } from '../user.repository';
 import * as bcrypt from 'bcrypt';
+import { LogService } from 'src/modules/log/log.service';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed_password'),
@@ -10,7 +11,10 @@ jest.mock('bcrypt', () => ({
 describe('UserService', () => {
   let service: UserService;
   let repository: UserRepository;
+  let logService: LogService;
+  const currentUser = { userId: 10, role: 'CUSTOMER' };
 
+  const mockLogService = { createLog: jest.fn() };
   const mockUserRepository = {
     findUserById: jest.fn(),
     createUser: jest.fn(),
@@ -24,11 +28,13 @@ describe('UserService', () => {
       providers: [
         UserService,
         { provide: UserRepository, useValue: mockUserRepository },
+        { provide: LogService, useValue: mockLogService },
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
     repository = module.get<UserRepository>(UserRepository);
+    logService = module.get(LogService);
   });
 
   it('should be defined', () => {
@@ -63,7 +69,7 @@ describe('UserService', () => {
     };
     mockUserRepository.createUser.mockResolvedValue(createdUser);
 
-    const result = await service.createUser(data);
+    const result = await service.createUser(data, currentUser);
     expect(result).toEqual(createdUser);
     expect(bcrypt.hash).toHaveBeenCalledWith('password', 10);
     expect(mockUserRepository.createUser).toHaveBeenCalledWith({

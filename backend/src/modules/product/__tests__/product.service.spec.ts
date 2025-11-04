@@ -2,11 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductService } from '../product.service';
 import { ProductRepository } from '../product.repository';
 import { CreateProductDTO } from '../dto/createProduct.dto';
+import { LogService } from 'src/modules/log/log.service';
+import { ActionType, EntityType } from '@prisma/client';
 
 describe('ProductService', () => {
   let service: ProductService;
   let repository: ProductRepository;
+  let logService: LogService;
+  const currentUser = { userId: 10, role: 'CUSTOMER' };
 
+  const mockLogService = { createLog: jest.fn() };
   const mockProductRepository = {
     findProductById: jest.fn(),
     findManyProducts: jest.fn(),
@@ -19,11 +24,13 @@ describe('ProductService', () => {
       providers: [
         ProductService,
         { provide: ProductRepository, useValue: mockProductRepository },
+        { provide: LogService, useValue: mockLogService },
       ],
     }).compile();
 
     service = module.get<ProductService>(ProductService);
     repository = module.get<ProductRepository>(ProductRepository);
+    logService = module.get(LogService);
   });
 
   it('should be defined', () => {
@@ -80,7 +87,7 @@ describe('ProductService', () => {
     };
     mockProductRepository.createProduct.mockResolvedValue(createdProduct);
 
-    const result = await service.createProduct(dto);
+    const result = await service.createProduct(dto, currentUser);
     expect(result).toEqual(createdProduct);
     expect(mockProductRepository.createProduct).toHaveBeenCalledWith(dto);
   });
@@ -97,7 +104,7 @@ describe('ProductService', () => {
     };
     mockProductRepository.updateProduct.mockResolvedValue(updatedProduct);
 
-    const result = await service.updateProduct(3, updateData);
+    const result = await service.updateProduct(3, updateData, currentUser);
     expect(result).toEqual(updatedProduct);
     expect(mockProductRepository.updateProduct).toHaveBeenCalledWith(
       3,

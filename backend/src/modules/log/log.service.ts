@@ -12,9 +12,6 @@ export class LogService {
       entity: data.entity,
       entityId: data.entityId,
       action: data.action,
-      field: data.field,
-      oldValue: data.oldValue,
-      newValue: data.newValue,
       description: data.description,
       performedBy: { connect: { id: data.performedById } },
     };

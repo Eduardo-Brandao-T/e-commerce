@@ -91,9 +91,6 @@ model Log {
   entity        EntityType
   entityId      Int
   action        ActionType
-  field         String?
-  oldValue      String?
-  newValue      String?
   description   String?
   createdAt     DateTime    @default(now())
 }

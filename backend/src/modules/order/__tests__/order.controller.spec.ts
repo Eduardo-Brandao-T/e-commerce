@@ -8,6 +8,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 describe('OrderController', () => {
   let controller: OrderController;
   let service: OrderService;
+  const currentUser = { userId: 10, role: 'CUSTOMER' };
 
   const mockOrderService = {
     getOrdersWithFilters: jest.fn(),
@@ -42,6 +43,9 @@ describe('OrderController', () => {
       items: [{ productId: 1, quantity: 1 }],
     };
     mockOrderService.createOrder.mockResolvedValue({ id: 1, total: 100 });
-    expect(await controller.createOrder(dto)).toEqual({ id: 1, total: 100 });
+    expect(await controller.createOrder(dto, currentUser)).toEqual({
+      id: 1,
+      total: 100,
+    });
   });
 });

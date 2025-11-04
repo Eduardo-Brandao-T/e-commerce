@@ -3,11 +3,14 @@ import { EventsService } from '../events.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderStatus } from '@prisma/client';
 import { PaymentConsumer } from '../consumer/payment.consumer';
+import { RmqContext } from '@nestjs/microservices';
 
 describe('PaymentConsumer', () => {
   let consumer: PaymentConsumer;
   let prisma: PrismaService;
   let eventsService: EventsService;
+  let mockChannel: any;
+  let mockContext: RmqContext;
 
   const mockPrisma = {
     order: {
@@ -17,6 +20,8 @@ describe('PaymentConsumer', () => {
 
   const mockEvents = {
     emit: jest.fn(),
+    getRetryCount: jest.fn(),
+    requeueWithDelay: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -32,12 +37,23 @@ describe('PaymentConsumer', () => {
     prisma = module.get<PrismaService>(PrismaService);
     eventsService = module.get<EventsService>(EventsService);
 
+    mockChannel = {
+      ack: jest.fn(),
+      sendToQueue: jest.fn(),
+    };
+
+    mockContext = {
+      getChannelRef: () => mockChannel,
+      getMessage: () => ({
+        content: Buffer.from(JSON.stringify({ orderId: 1 })),
+        properties: { headers: {} },
+      }),
+    } as unknown as RmqContext;
+
     jest.spyOn(consumer as any, 'simulateExternalPayment');
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
   it('should process payment successfully', async () => {
     (consumer as any).simulateExternalPayment.mockResolvedValue({
@@ -45,7 +61,7 @@ describe('PaymentConsumer', () => {
       status: OrderStatus.PAYMENT_CONFIRMED,
     });
 
-    await consumer.handleOrderCreated({ orderId: 1 });
+    await consumer.handleOrderCreated({ orderId: 1 }, mockContext);
 
     expect(mockPrisma.order.update).toHaveBeenCalledWith({
       where: { id: 1 },
@@ -56,31 +72,52 @@ describe('PaymentConsumer', () => {
     });
   });
 
-  it('should handle payment failure without event emission', async () => {
+  it('should handle payment failure without emitting event', async () => {
     (consumer as any).simulateExternalPayment.mockResolvedValue({
       success: false,
       status: OrderStatus.PAYMENT_FAILED,
     });
 
-    await consumer.handleOrderCreated({ orderId: 2 });
+    await consumer.handleOrderCreated({ orderId: 2 }, mockContext);
 
     expect(mockPrisma.order.update).toHaveBeenCalledWith({
       where: { id: 2 },
       data: { status: OrderStatus.PAYMENT_FAILED },
     });
     expect(mockEvents.emit).not.toHaveBeenCalled();
+    expect(mockChannel.ack).toHaveBeenCalledTimes(1);
   });
 
-  it('should log and rethrow errors when simulateExternalPayment fails', async () => {
-    (consumer as any).simulateExternalPayment.mockRejectedValue(
-      new Error('DB error'),
+  it('should call requeueWithDelay on transient error', async () => {
+    const error = new Error('Temporary error');
+    (consumer as any).simulateExternalPayment.mockRejectedValue(error);
+
+    mockEvents.getRetryCount.mockReturnValue(0);
+    await consumer.handleOrderCreated({ orderId: 3 }, mockContext);
+
+    expect(mockEvents.getRetryCount).toHaveBeenCalled();
+    expect(mockEvents.requeueWithDelay).toHaveBeenCalledWith(
+      mockChannel,
+      expect.any(Object),
+      expect.any(Number),
+    );
+    expect(mockChannel.ack).toHaveBeenCalledTimes(1);
+  });
+
+  it('should move to DLQ after max retries', async () => {
+    const error = new Error('Still failing');
+    (consumer as any).simulateExternalPayment.mockRejectedValue(error);
+
+    mockEvents.getRetryCount.mockReturnValue(5);
+    await consumer.handleOrderCreated({ orderId: 4 }, mockContext);
+
+    expect(mockChannel.sendToQueue).toHaveBeenCalledWith(
+      'app_events_dlq',
+      expect.any(Buffer),
+      expect.any(Object),
     );
 
-    await expect(consumer.handleOrderCreated({ orderId: 3 })).rejects.toThrow(
-      'DB error',
-    );
-
-    expect(mockPrisma.order.update).not.toHaveBeenCalled();
-    expect(mockEvents.emit).not.toHaveBeenCalled();
+    expect(mockEvents.requeueWithDelay).not.toHaveBeenCalled();
+    expect(mockChannel.ack).toHaveBeenCalledTimes(1);
   });
 });

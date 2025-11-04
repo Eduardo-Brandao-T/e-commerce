@@ -10,6 +10,7 @@ import { Role } from '@prisma/client';
 describe('UserController', () => {
   let controller: UserController;
   let userService: jest.Mocked<UserService>;
+  const currentUser = { userId: 10, role: 'CUSTOMER' };
 
   const mockUser = {
     id: 1,
@@ -78,9 +79,9 @@ describe('UserController', () => {
       const createdUser = { ...mockUser, ...dto, id: 2 };
       userService.createUser.mockResolvedValue(createdUser);
 
-      const result = await controller.createUser(dto);
+      const result = await controller.createUser(dto, currentUser);
 
-      expect(userService.createUser).toHaveBeenCalledWith(dto);
+      expect(userService.createUser).toHaveBeenCalledWith(dto, currentUser);
       expect(result).toEqual(createdUser);
     });
   });
@@ -91,16 +92,16 @@ describe('UserController', () => {
       const updatedUser = { ...mockUser, ...dto };
       userService.updateUser.mockResolvedValue(updatedUser);
 
-      const result = await controller.updateUser(1, dto);
+      const result = await controller.updateUser(1, dto, currentUser);
 
-      expect(userService.updateUser).toHaveBeenCalledWith(1, dto);
+      expect(userService.updateUser).toHaveBeenCalledWith(1, dto, currentUser);
       expect(result).toEqual(updatedUser);
     });
 
     it('deve lançar NotFoundException se o usuário não for encontrado', async () => {
       userService.updateUser.mockResolvedValue(null);
 
-      await expect(controller.updateUser(999, {})).rejects.toThrow(
+      await expect(controller.updateUser(999, {}, currentUser)).rejects.toThrow(
         new NotFoundException(MESSAGES.CUSTOMER.NOT_FOUND),
       );
     });

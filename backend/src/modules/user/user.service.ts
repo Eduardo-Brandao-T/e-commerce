@@ -54,18 +54,34 @@ export class UserService {
     data: Partial<CreateUserDTO>,
     currentUser: UserPayload,
   ): Promise<User | null> {
-    const result = await this.userRepository.updateUser(id, data);
-    if (result) {
+    const oldUser = await this.userRepository.findUserById(id);
+    if (!oldUser) return null;
+
+    const updatedUser = await this.userRepository.updateUser(id, data);
+    if (updatedUser) {
+      const oldValues = Object.keys(data).reduce(
+        (acc, key) => {
+          acc[key] = oldUser[key as keyof typeof oldUser];
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+
+      const description = JSON.stringify({
+        old: oldValues,
+        new: data,
+      });
+
       await this.logService.createLog({
         action: ActionType.UPDATE,
         entity: EntityType.CUSTOMER,
-        entityId: result.id,
+        entityId: updatedUser.id,
         performedById: currentUser.userId,
-        description: `User ${result.id} updated by ${currentUser.userId}`,
+        description,
       });
     }
 
-    return result;
+    return updatedUser;
   }
 
   private async checkConflict(document: string) {
