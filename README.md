@@ -252,7 +252,7 @@ flowchart TD
 
 Para garantir robustez e resiliência, o sistema implementa **mecanismos de retry e DLQ (Dead Letter Queue)**:
 
-- Se um consumidor falhar ao processar uma mensagem (por exemplo, por falha temporária no banco), o RabbitMQ reencaminha a mensagem para **reprocessamento automático**.
+- Se um consumidor falhar ao processar uma mensagem (por exemplo, por falha temporária no banco), o RabbitMQ reencaminha a mensagem para **reprocessamento automático**, a cada retry o tempo de espera para processar o evento aumenta exponencialmente.
 - O número de tentativas foi configurada para 5.
 - Caso todas as tentativas falhem, a mensagem é enviada para uma **DLQ (`app_events.dlq`)**.
 - A DLQ serve para **armazenar mensagens com falhas permanentes**, permitindo que elas sejam inspecionadas e reprocessadas manualmente depois.
@@ -319,7 +319,7 @@ Além disso também foi implementada uma lógica de auditoria, nos endpoints em 
 ## 🌟 Bônus Implementados
 
 ✅ **Logs automáticos** de ações em entidades  
-✅ **DLQ** no serviço de mensageria  
+✅ **DLQ e retry com backoff exponencial** no serviço de mensageria  
 ✅ Estratégia para evitar **Race conditions**  
 ✅ **Swagger com autenticação JWT integrada**  
 ✅ **Permissões diferenciadas** entre customer e admin  
