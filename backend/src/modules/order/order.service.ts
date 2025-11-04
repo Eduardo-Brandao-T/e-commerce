@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { OrderRepository } from './order.repository';
-import { CreateOrderDto, OrderItemDto } from './createOrder.dto';
+import { CreateOrderDto, OrderItemDto } from './dto/createOrder.dto';
 import { ProductRepository } from '../product/product.repository';
 import { Prisma, Product } from '@prisma/client';
 import { EventsService } from 'src/events/events.service';
-import { EventType } from 'src/events/eventTypes';
+import { EventType } from 'src/events/const/eventTypes';
 import { GetOrdersFilterDto } from './getOrderFilter.dto';
 import { MESSAGES } from 'src/common/constants/messages.constants';
 

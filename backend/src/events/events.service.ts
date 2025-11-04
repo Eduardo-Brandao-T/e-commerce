@@ -1,36 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import {
-  ClientProxy,
-  ClientProxyFactory,
-  Transport,
-} from '@nestjs/microservices';
-import { ConfigService } from '@nestjs/config';
-import { EventType } from './eventTypes';
+import { Inject, Injectable } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { EventType } from './const/eventTypes';
 
 @Injectable()
 export class EventsService {
-  private client: ClientProxy;
-
-  constructor(private readonly configService: ConfigService) {
-    const rabbitUrl =
-      this.configService.get<string>('RABBITMQ_URL') ||
-      'amqp://guest:guest@localhost:5672';
-
-    this.client = ClientProxyFactory.create({
-      transport: Transport.RMQ,
-      options: {
-        urls: [rabbitUrl],
-        queue: 'app_events',
-        queueOptions: {
-          durable: true,
-          deadLetterExchange: '',
-          deadLetterRoutingKey: 'app_events_dlq',
-        },
-      },
-    });
-  }
+  constructor(
+    @Inject('RABBITMQ_SERVICE') private readonly client: ClientProxy,
+  ) {}
 
   emit(event: EventType, payload: any) {
-    this.client.emit(event, payload);
+    return this.client.emit(event, payload);
   }
 }

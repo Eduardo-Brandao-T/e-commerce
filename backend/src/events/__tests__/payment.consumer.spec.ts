@@ -1,9 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PaymentConsumer } from '../payment.consumer';
 import { EventsService } from '../events.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { OrderStatus } from '@prisma/client';
-import { RmqContext } from '@nestjs/microservices';
+import { PaymentConsumer } from '../consumer/payment.consumer';
 
 describe('PaymentConsumer', () => {
   let consumer: PaymentConsumer;
@@ -19,20 +18,6 @@ describe('PaymentConsumer', () => {
   const mockEvents = {
     emit: jest.fn(),
   };
-
-  const mockChannel = {
-    ack: jest.fn(),
-    nack: jest.fn(),
-    publish: jest.fn(),
-  };
-
-  const mockContext = {
-    getChannelRef: () => mockChannel,
-    getMessage: () => ({
-      properties: { headers: {} },
-      content: Buffer.from(''),
-    }),
-  } as unknown as RmqContext;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -60,7 +45,7 @@ describe('PaymentConsumer', () => {
       status: OrderStatus.PAYMENT_CONFIRMED,
     });
 
-    await consumer.handleOrderCreated({ orderId: 1 }, mockContext);
+    await consumer.handleOrderCreated({ orderId: 1 });
 
     expect(mockPrisma.order.update).toHaveBeenCalledWith({
       where: { id: 1 },
@@ -69,7 +54,6 @@ describe('PaymentConsumer', () => {
     expect(mockEvents.emit).toHaveBeenCalledWith('PAYMENT_PROCESSED', {
       orderId: 1,
     });
-    expect(mockChannel.ack).toHaveBeenCalled();
   });
 
   it('should handle payment failure without event emission', async () => {
@@ -78,44 +62,25 @@ describe('PaymentConsumer', () => {
       status: OrderStatus.PAYMENT_FAILED,
     });
 
-    await consumer.handleOrderCreated({ orderId: 2 }, mockContext);
+    await consumer.handleOrderCreated({ orderId: 2 });
 
     expect(mockPrisma.order.update).toHaveBeenCalledWith({
       where: { id: 2 },
       data: { status: OrderStatus.PAYMENT_FAILED },
     });
     expect(mockEvents.emit).not.toHaveBeenCalled();
-    expect(mockChannel.ack).toHaveBeenCalled();
   });
 
-  it('should retry on error and publish back to queue', async () => {
+  it('should log and rethrow errors when simulateExternalPayment fails', async () => {
     (consumer as any).simulateExternalPayment.mockRejectedValue(
       new Error('DB error'),
     );
 
-    await consumer.handleOrderCreated({ orderId: 3 }, mockContext);
-
-    expect(mockChannel.publish).toHaveBeenCalled();
-    expect(mockChannel.ack).toHaveBeenCalled();
-    expect(mockChannel.nack).not.toHaveBeenCalled();
-  });
-
-  it('should nack after max retries', async () => {
-    const originalMsg = {
-      properties: { headers: { 'x-retry': 5 } },
-      content: Buffer.from(''),
-    };
-    const contextWithRetries = {
-      getChannelRef: () => mockChannel,
-      getMessage: () => originalMsg,
-    } as unknown as RmqContext;
-
-    (consumer as any).simulateExternalPayment.mockRejectedValue(
-      new Error('DB error'),
+    await expect(consumer.handleOrderCreated({ orderId: 3 })).rejects.toThrow(
+      'DB error',
     );
 
-    await consumer.handleOrderCreated({ orderId: 4 }, contextWithRetries);
-
-    expect(mockChannel.nack).toHaveBeenCalledWith(originalMsg, false, false);
+    expect(mockPrisma.order.update).not.toHaveBeenCalled();
+    expect(mockEvents.emit).not.toHaveBeenCalled();
   });
 });

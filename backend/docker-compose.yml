@@ -24,6 +24,11 @@ services:
       RABBITMQ_DEFAULT_PASS: admin
     networks:
       - ecommerce_network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    command: >
+      bash -c "rabbitmq-server"
 
   backend:
     build: .
@@ -63,6 +68,7 @@ services:
       "
 
 volumes:
+  rabbitmq_data:
   postgres_data:
 
 networks:

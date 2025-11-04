@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrderService } from '../order.service';
 import { OrderRepository } from '../order.repository';
 import { ProductRepository } from '../../product/product.repository';
-import { CreateOrderDto } from '../createOrder.dto';
+import { CreateOrderDto } from '../dto/createOrder.dto';
 import { MESSAGES } from 'src/common/constants/messages.constants';
 import { EventsService } from 'src/events/events.service';
 

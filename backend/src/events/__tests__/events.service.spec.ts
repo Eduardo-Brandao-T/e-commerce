@@ -4,10 +4,20 @@ import { ConfigService } from '@nestjs/config';
 
 describe('EventsService', () => {
   let service: EventsService;
+  let clientMock: { emit: jest.Mock };
 
   beforeEach(async () => {
+    clientMock = { emit: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EventsService, ConfigService],
+      providers: [
+        EventsService,
+        ConfigService,
+        {
+          provide: 'RABBITMQ_SERVICE',
+          useValue: clientMock,
+        },
+      ],
     }).compile();
 
     service = module.get<EventsService>(EventsService);
@@ -18,8 +28,7 @@ describe('EventsService', () => {
   });
 
   it('should emit event', () => {
-    const spy = jest.spyOn((service as any).client, 'emit');
     service.emit('TEST_EVENT' as any, { a: 1 });
-    expect(spy).toHaveBeenCalledWith('TEST_EVENT', { a: 1 });
+    expect(clientMock.emit).toHaveBeenCalledWith('TEST_EVENT', { a: 1 });
   });
 });
