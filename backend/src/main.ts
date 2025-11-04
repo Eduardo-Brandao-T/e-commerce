@@ -26,7 +26,22 @@ async function bootstrap() {
     .setTitle('E-commerce API')
     .setDescription('API de e-commerce')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Informe o token JWT',
+        in: 'header',
+      },
+      'access-token',
+    )
+    .addTag('Auth', 'Autenticação de usuários')
+    .addTag('Users', 'Gerenciamento de usuários')
+    .addTag('Products', 'Gerenciamento de produtos')
+    .addTag('Orders', 'Gerenciamento de pedidos')
+    .addTag('Events', 'Eventos do Rabbitmq')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

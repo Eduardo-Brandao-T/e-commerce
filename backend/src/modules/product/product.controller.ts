@@ -9,7 +9,13 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { CreateProductDTO } from './dto/createProduct.dto';
 import { MESSAGES } from 'src/common/constants/messages.constants';
@@ -17,8 +23,11 @@ import { Roles } from 'src/common/guards/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UpdateProductDTO } from './dto/updateProduct.dto';
+import { CurrentUser } from 'src/common/guards/currentUser.decorator';
+import type { UserPayload } from '../auth/dto/userPayload.type';
 
 @ApiTags('Products')
+@ApiBearerAuth('access-token')
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductController {
@@ -84,8 +93,11 @@ export class ProductController {
       },
     },
   })
-  async createProduct(@Body() data: CreateProductDTO) {
-    return await this.productService.createProduct(data);
+  async createProduct(
+    @Body() data: CreateProductDTO,
+    @CurrentUser() currentUser: UserPayload,
+  ) {
+    return await this.productService.createProduct(data, currentUser);
   }
 
   @Put(':id')
@@ -107,8 +119,13 @@ export class ProductController {
   async updateProduct(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateProductDTO,
+    @CurrentUser() currentUser: UserPayload,
   ) {
-    const product = await this.productService.updateProduct(id, data);
+    const product = await this.productService.updateProduct(
+      id,
+      data,
+      currentUser,
+    );
     if (!product) throw new NotFoundException(MESSAGES.PRODUCT.NOT_FOUND);
     return product;
   }

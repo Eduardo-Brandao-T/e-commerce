@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ExcludePasswordInterceptor } from './common/interceptors/excludePassword.interceptor';
+import { LogModule } from './modules/log/log.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ExcludePasswordInterceptor } from './common/interceptors/excludePasswor
     OrderModule,
     EventsModule,
     AuthModule,
+    LogModule,
   ],
   providers: [
     {

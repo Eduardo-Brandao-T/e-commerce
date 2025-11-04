@@ -15,16 +15,20 @@ import {
   ApiResponse,
   ApiBody,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { OrderService } from './order.service';
-import { GetOrdersFilterDto } from './getOrderFilter.dto';
+import { GetOrdersFilterDto } from './dto/getOrderFilter.dto';
 import { Roles } from 'src/common/guards/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { CreateOrderDto } from './dto/createOrder.dto';
 import { OrderStatus } from '@prisma/client';
+import { CurrentUser } from 'src/common/guards/currentUser.decorator';
+import type { UserPayload } from '../auth/dto/userPayload.type';
 
 @ApiTags('Orders')
+@ApiBearerAuth('access-token')
 @Controller('order')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OrderController {
@@ -33,7 +37,6 @@ export class OrderController {
   @Get()
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Lista todos os pedidos (com filtros)' })
-  @ApiQuery({ type: GetOrdersFilterDto })
   @ApiResponse({
     status: 200,
     description: 'Pedidos listados com sucesso',
@@ -91,7 +94,10 @@ export class OrderController {
       },
     },
   })
-  async createOrder(@Body() data: CreateOrderDto) {
-    return await this.orderService.createOrder(data);
+  async createOrder(
+    @Body() data: CreateOrderDto,
+    @CurrentUser() currentUser: UserPayload,
+  ) {
+    return await this.orderService.createOrder(data, currentUser);
   }
 }

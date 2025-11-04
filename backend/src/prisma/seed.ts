@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   // --- Clientes ---
-  const adminPassword = await bcrypt.hash('admin', saltRounds);
+  const adminPassword = await bcrypt.hash('admin1', saltRounds);
   const clientPassword = await bcrypt.hash('senha123', saltRounds);
   const user1 = await prisma.user.upsert({
     where: { email: 'admin@email.com' },

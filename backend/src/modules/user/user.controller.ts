@@ -11,7 +11,13 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { MESSAGES } from 'src/common/constants/messages.constants';
 import { Roles } from 'src/common/guards/roles.decorator';
@@ -21,8 +27,11 @@ import { Public } from 'src/common/guards/public.decorator';
 import { User } from '@prisma/client';
 import { CreateUserDTO } from './dto/createUser.dto';
 import { UpdateUserDTO } from './dto/updateUser.dto';
+import { CurrentUser } from 'src/common/guards/currentUser.decorator';
+import type { UserPayload } from '../auth/dto/userPayload.type';
 
 @ApiTags('Users')
+@ApiBearerAuth('access-token')
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
@@ -88,8 +97,11 @@ export class UserController {
       },
     },
   })
-  async createUser(@Body() data: CreateUserDTO): Promise<User | null> {
-    return await this.userService.createUser(data);
+  async createUser(
+    @Body() data: CreateUserDTO,
+    @CurrentUser() currentUser: UserPayload,
+  ): Promise<User | null> {
+    return await this.userService.createUser(data, currentUser);
   }
 
   @Put(':id')
@@ -112,8 +124,9 @@ export class UserController {
   async updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateUserDTO,
+    @CurrentUser() currentUser: UserPayload,
   ): Promise<User> {
-    const user = await this.userService.updateUser(id, data);
+    const user = await this.userService.updateUser(id, data, currentUser);
     if (!user) throw new NotFoundException(MESSAGES.CUSTOMER.NOT_FOUND);
     return user;
   }

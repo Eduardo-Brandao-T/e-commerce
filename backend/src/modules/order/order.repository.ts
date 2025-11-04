@@ -7,7 +7,10 @@ export class OrderRepository {
   constructor(private prismaService: PrismaService) {}
 
   async findManyOrders(params: Prisma.OrderFindManyArgs) {
-    return this.prismaService.order.findMany(params);
+    return this.prismaService.order.findMany({
+      ...params,
+      include: { orderItems: true, ...(params.include ?? {}) },
+    });
   }
 
   async findOrderById(id: number) {

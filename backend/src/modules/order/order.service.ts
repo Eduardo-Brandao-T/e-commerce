@@ -2,17 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { OrderRepository } from './order.repository';
 import { CreateOrderDto, OrderItemDto } from './dto/createOrder.dto';
 import { ProductRepository } from '../product/product.repository';
-import { Prisma, Product } from '@prisma/client';
+import { ActionType, EntityType, Order, Prisma, Product } from '@prisma/client';
 import { EventsService } from 'src/events/events.service';
 import { EventType } from 'src/events/const/eventTypes';
-import { GetOrdersFilterDto } from './getOrderFilter.dto';
+import { GetOrdersFilterDto } from './dto/getOrderFilter.dto';
 import { MESSAGES } from 'src/common/constants/messages.constants';
+import type { UserPayload } from '../auth/dto/userPayload.type';
+import { LogService } from '../log/log.service';
 
 type PrismaOrderItemInput = {
   product: { connect: { id: number } };
   quantity: number;
   price: number;
 };
+
 type OrderWithItems = Prisma.OrderGetPayload<{
   include: { orderItems: true };
 }>;
@@ -20,12 +23,15 @@ type OrderWithItems = Prisma.OrderGetPayload<{
 @Injectable()
 export class OrderService {
   constructor(
-    private orderRepository: OrderRepository,
-    private productRepository: ProductRepository,
-    private events: EventsService,
+    private readonly orderRepository: OrderRepository,
+    private readonly productRepository: ProductRepository,
+    private readonly events: EventsService,
+    private readonly logService: LogService,
   ) {}
 
-  async getOrdersWithFilters(filters: GetOrdersFilterDto) {
+  async getOrdersWithFilters(
+    filters: GetOrdersFilterDto,
+  ): Promise<OrderWithItems[]> {
     const where = this.buildWhere(filters);
 
     const take = filters.limit || 10;
@@ -45,14 +51,44 @@ export class OrderService {
     });
   }
 
-  async getOrdersByUserId(UserId: number) {
+  async getOrdersByUserId(userId: number): Promise<OrderWithItems[]> {
     return this.orderRepository.findManyOrders({
-      where: { userId: UserId },
+      where: { userId },
       include: { orderItems: true },
     });
   }
 
-  private buildWhere(filters: GetOrdersFilterDto) {
+  async createOrder(
+    { userId, items }: CreateOrderDto,
+    currentUser: UserPayload,
+  ): Promise<OrderWithItems> {
+    const products = await this.getProducts(items);
+    const itemsWithPrice = this.buildItemsWithPrice(items, products);
+    const total = this.calculateTotal(itemsWithPrice);
+
+    const createdOrder = await this.orderRepository.createOrder({
+      user: { connect: { id: userId } },
+      total,
+      orderItems: {
+        create: itemsWithPrice,
+      },
+    });
+
+    if (createdOrder) {
+      this.emitOrderCreatedEvent(createdOrder);
+      await this.logService.createLog({
+        action: ActionType.CREATE,
+        entity: EntityType.ORDER,
+        entityId: createdOrder.id,
+        performedById: currentUser.userId,
+        description: `Order ${createdOrder.id} created by user ${currentUser.userId}`,
+      });
+    }
+
+    return createdOrder;
+  }
+
+  private buildWhere(filters: GetOrdersFilterDto): Prisma.OrderWhereInput {
     const { orderId, userId, status, startDate, endDate } = filters;
 
     return {
@@ -70,26 +106,8 @@ export class OrderService {
     };
   }
 
-  async createOrder({ userId, items }: CreateOrderDto) {
-    const products = await this.getProducts(items);
-    const itemsWithPrice = this.buildItemsWithPrice(items, products);
-    const total = this.calculateTotal(itemsWithPrice);
-
-    const createdOrder = await this.orderRepository.createOrder({
-      user: { connect: { id: userId } },
-      total,
-      orderItems: {
-        create: itemsWithPrice,
-      },
-    });
-    this.emitOrderCreatedEvent(createdOrder);
-
-    return createdOrder;
-  }
-
   private async getProducts(items: OrderItemDto[]): Promise<Product[]> {
     const productIds = items.map((item) => item.productId);
-
     const products = await this.productRepository.findManyProducts({
       id: { in: productIds },
     });
@@ -122,7 +140,7 @@ export class OrderService {
     return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }
 
-  private emitOrderCreatedEvent(order: OrderWithItems) {
+  private emitOrderCreatedEvent(order: OrderWithItems): void {
     this.events.emit(EventType.ORDER_CREATED, {
       orderId: order.id,
       userId: order.userId,
