@@ -22,12 +22,4 @@ export class EventsController {
     this.eventsService.emit(body.type, body.payload);
     return { message: `Evento ${body.type} publicado com sucesso!` };
   }
-
-  @Post('payment')
-  @ApiOperation({ summary: 'Publica mensagem padrão' })
-  @Roles('ADMIN')
-  testPaymentEvent() {
-    this.eventsService.emit(EventType.PAYMENT_PROCESSED, { orderId: 1 });
-    return { message: 'Evento PAYMENT_PROCESSED enviado!' };
-  }
 }
