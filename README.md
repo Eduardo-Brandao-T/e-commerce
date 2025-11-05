@@ -143,6 +143,18 @@ Com o token autenticado:
 3. Repita as chamadas aos endpoints de **Usuário** e **Produto**.  
    > Você deve receber **erros 403 (Forbidden)**, confirmando que os **bloqueios de acesso** estão funcionando corretamente.
 
+### **6. Teste isolado de mensageria**
+
+Para testar a mensageria isoladamente podemos optar pelo swagger usando um usuário admin, ou pelo Rabbitmq panel.
+
+**Swagger:**
+Para testar o stock consumer podemos usar o endpoint de events para enviar uma mensagem com orderId 1 (do seed) no payload e no type "PAYMENT_PROCESSED", assim a mensagem será publicada e o consumer chamado.
+
+**RabbitMq panel**
+Iremos acessar o [panel](http://localhost:15672/) logar com usuário e senha admin, ir em qeues, publish event e colocar um json como o mencionado a cime, o comportamento deve ser o mesmo.
+
+Para testar os dois consumers juntos podemos apenas criar um novo pedido e verificar os logs da aplicação.
+
 ---
 
 ## 🧱 Arquitetura
